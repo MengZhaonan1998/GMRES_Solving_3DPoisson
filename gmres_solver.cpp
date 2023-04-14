@@ -36,7 +36,7 @@ void gmres_solver(stencil3d const* op, int n, double* x, double const* b,
   // compute the error
   r_norm = std::sqrt(dot(n,r,r));
   b_norm = std::sqrt(dot(n,b,b));
-  double error = r_norm/b_norm;
+  double error = r_norm/b_norm;  // here I use the relative error instead of the residual norm
 
   // initialize the 1D vectors
   init(maxIter, sn, 0.0); 
@@ -47,12 +47,22 @@ void gmres_solver(stencil3d const* op, int n, double* x, double const* b,
   beta[0]=r_norm;
 
   // initialize Q and H;
+  /* Q and H have special data structures.
+   * Q as a 1D double array stores a 2D matrix by column major
+   * H is an upper Hessenburg matrix. To save the memory we only store the necessary elements, i.e.
+   * __                 __
+   * | H[0] H[2] H[5] ...|
+   * | H[1] H[3] H[6] ...|
+   * |      H[4] H[7] ...|
+   * |           H[8] ...|
+   * |                ...|
+   * __                 __
+   * */
   init((maxIter+1) * n, Q, 0.0);
   init(((maxIter+1) * maxIter)/2+maxIter, H, 0.0);
   for (int i=0;i<n;i++) Q[i]=r[i]/r_norm;  
 
-
-  // start CG iteration
+  // start GMRES iteration
   int iter = -1;
   while (true)
   {
@@ -69,9 +79,9 @@ void gmres_solver(stencil3d const* op, int n, double* x, double const* b,
       break;
     }
 
-    arnoldi(iter, Q, H + iter*(iter+1)/2+iter, op); 
+    arnoldi(iter, Q, H + iter*(iter+1)/2+iter, op);          // operation: Arnoldi process 
 
-    given_rotation(iter, H + iter*(iter+1)/2+iter, cs, sn);
+    given_rotation(iter, H + iter*(iter+1)/2+iter, cs, sn);  // operation: Given rotation
 
     beta[iter+1] = -sn[iter]*beta[iter];
     beta[iter] = cs[iter]*beta[iter];
@@ -103,7 +113,7 @@ void gmres_solver(stencil3d const* op, int n, double* x, double const* b,
   delete [] H;
   delete [] y;
 
-  // return number of iterations and achieved residual
+  // return number of iterations and achieved residual (or should I return error=norm_r/norm_b ?)
   *resNorm = beta[iter];
   *numIter = iter;
 

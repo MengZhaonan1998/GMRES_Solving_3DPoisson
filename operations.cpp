@@ -2,6 +2,7 @@
 #include <omp.h>
 #include <cmath>
 #include <iostream>
+
 void init(int n, double* x, double value)
 {
   
@@ -57,7 +58,7 @@ void apply_stencil3d(stencil3d const* S,
   return;
 }
 
-// apply given rotations
+// apply given rotation
 void given_rotation(int k, double* h, double* cs, double* sn)
 {
   double temp, t, cs_k, sn_k;
